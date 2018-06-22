@@ -37,6 +37,9 @@ libraryDependencies ++= {
     "org.elasticsearch" %% "elasticsearch-spark-20" % "6.1.2",
     "org.apache.storm" % "storm" % "1.1.1",
     "org.scalatest" %% "scalatest" % "2.2.6" % "test",
-    "commons-codec" % "commons-codec" % "1.11"
+    "commons-codec" % "commons-codec" % "1.11",
+    "org.mongodb.spark" %% "mongo-spark-connector" % "2.1.1",
+    "redis.clients" % "jedis" % "2.8.0",
+    "RedisLabs" % "spark-redis" % "0.3.2"
   )
 }
