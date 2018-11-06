@@ -27,16 +27,46 @@ object XJdbcUtil extends Logging {
     val columns = columnNames.mkString(",")
     val placeholders = rddSchema.fields.map(_ => "?").mkString(",")
 
-    val sql = saveMode match {
-      case Upsert =>
-        val duplicateSetting = columnNames.map(name => s"$name=?").mkString(",")
-        s"INSERT INTO $table ($columns) VALUES ($placeholders) ON DUPLICATE KEY UPDATE $duplicateSetting"
-      case Append | Overwrite =>
-        s"INSERT INTO $table ($columns) VALUES ($placeholders)"
-      case IgnoreRecord =>
-        s"INSERT IGNORE INTO $table ($columns) VALUES ($placeholders)"
-      case _ => throw new IllegalArgumentException(s"$saveMode is illegal")
+    val driver = conn.getClientInfo.getProperty("ApplicationName")
+
+    val sql = if (driver.contains("PostgreSQL")) {
+      saveMode match {
+        case Upsert =>
+          val duplicateSetting = columnNames.map(name => s"$name=?").mkString(",")
+
+          val key = columnNames.take(1).apply(0).replaceAll("\"", "")
+
+          /**
+            * INSERT INTO the_table (id, column_1, column_2)
+            * VALUES (1, 'A', 'X'), (2, 'B', 'Y'), (3, 'C', 'Z')
+            * ON CONFLICT (id) DO UPDATE
+            * SET column_1 = excluded.column_1,
+            * column_2 = excluded.column_2;
+            */
+          s"INSERT INTO $table ($columns) VALUES ($placeholders) ON CONFLICT($key) DO UPDATE SET $duplicateSetting ;"
+        //          s"INSERT INTO $table ($columns) VALUES ($placeholders) ON DUPLICATE KEY UPDATE $duplicateSetting"
+        case Append | Overwrite =>
+          s"INSERT INTO $table ($columns) VALUES ($placeholders)"
+        case IgnoreRecord =>
+          s"INSERT IGNORE INTO $table ($columns) VALUES ($placeholders)"
+        case _ => throw new IllegalArgumentException(s"$saveMode is illegal")
+      }
+    } else {
+      saveMode match {
+        case Upsert =>
+          val duplicateSetting = columnNames.map(name => s"$name=?").mkString(",")
+          s"INSERT INTO $table ($columns) VALUES ($placeholders) ON DUPLICATE KEY UPDATE $duplicateSetting"
+        case Append | Overwrite =>
+          s"INSERT INTO $table ($columns) VALUES ($placeholders)"
+        case IgnoreRecord =>
+          s"INSERT IGNORE INTO $table ($columns) VALUES ($placeholders)"
+        case _ => throw new IllegalArgumentException(s"$saveMode is illegal")
+      }
     }
+
+    //    val sql = saveMode match {
+    //
+    //    }
     conn.prepareStatement(sql)
   }
 

@@ -31,12 +31,16 @@ object Test {
     import sqlContext.implicits._
 
 
-    val insertDF = Seq(User(1, "ls", "ls"), User(2, "pp", "xxoopp"))
+    val insertDF = Seq(User(1, "ls", "lsppp"), User(2, "pp", "pppuu"))
       .toDF("id", "account", "passwd")
 
-    JdbcUtil.saveToMysql("my_user",JdbcSaveMode.Upsert)(insertDF)
+    JdbcUtil.saveToPG("my_user", JdbcSaveMode.Upsert)(insertDF)
 
-    val df = JdbcUtil.mysqlJdbcDF("my_user")
+    //        JdbcUtil.saveToMysql("my_user", JdbcSaveMode.Upsert)(insertDF)
+    //
+    //    val df = JdbcUtil.mysqlJdbcDF("my_user")
+
+    val df = JdbcUtil.PGJdbcDF("my_user")
 
     df.printSchema()
     df.show()

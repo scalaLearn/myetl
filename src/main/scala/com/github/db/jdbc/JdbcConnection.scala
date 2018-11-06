@@ -76,6 +76,24 @@ private[github] object MysqlConnection {
 }
 
 
+case class PGConnection(configName: String, rootNode: String) extends JdbcConnection {
+  def config: JDBCConfig = JDBCConfig.readConfig(configName, rootNode)
+
+  require(config.driver.contains("postgresql"), "driver name must be postgresql")
+
+  override def user: String = config.user
+
+  override def password: String = config.password
+
+  override def driver: String = config.driver
+
+  override def url: String = config.url
+}
+
+private[github] object PGConnection {
+  def build(configName: String, rootNode: String): PGConnection = PGConnection(configName, rootNode)
+}
+
 case class Db2Connection(configName: String, rootNode: String) extends JdbcConnection {
 
   def config = JDBCConfig.readConfig(configName, rootNode)
@@ -98,8 +116,8 @@ private[github] object Db2Connection {
 
 object JDBCConfig {
 
-  import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import net.ceedubs.ficus.Ficus._
+  import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 
   def readConfig(configName: String, rootNode: String): JDBCConfig = {
     ConfigUtil.readClassPathConfig[JDBCConfig](configName, rootNode).build
@@ -133,6 +151,18 @@ case class JDBCConfig(user: String,
 object JdbcUtil {
 
   private lazy val numPartitions = 6
+
+  def PGJdbcDF(table: String, rootNode: String = "source", numPartitions: Int = numPartitions, configName: String = "pgsql2pgsql")(implicit sqlContext: SQLContext): DataFrame = {
+    val pgsql = PGConnection.build(configName, rootNode)
+    import pgsql._
+    sqlContext.jdbcDF(table, numPartitions)
+  }
+
+  def save2PG(table: String, numPartitions: Option[Int] = None, configName: String = "pgsql2pgsql", rootNode: String = "sink")(implicit dataFrame: DataFrame) = {
+    val pgsql = PGConnection.build(configName, rootNode)
+    import pgsql._
+    dataFrame.save2DB(table, numPartitions /* orElse Option(1)*/)
+  }
 
   def mysqlJdbcDF(table: String, rootNode: String = "source", numPartitions: Int = numPartitions, configName: String = "mysql2mysql")(implicit sqlContext: SQLContext): DataFrame = {
     val mysql = MysqlConnection.build(configName, rootNode)
@@ -170,6 +200,13 @@ object JdbcUtil {
     * @param configName
     * @param dataFrame
     */
+
+  def saveToPG(table: String, saveMode: JdbcSaveMode.SaveMode,
+               rootNode: String = "sink", configName: String = "pgsql2pgsql")(implicit dataFrame: DataFrame) = {
+    val explain = buildJdbcSaveExplain(table, saveMode, rootNode, configName)
+    dataFrame.writeJdbc(explain).save()
+  }
+
   def saveToMysql(table: String, saveMode: JdbcSaveMode.SaveMode,
                   rootNode: String = "sink", configName: String = "mysql2mysql")(implicit dataFrame: DataFrame) = {
     val explain = buildJdbcSaveExplain(table, saveMode, rootNode, configName)

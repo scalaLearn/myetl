@@ -25,7 +25,7 @@ libraryDependencies ++= {
     "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.1",
     "org.apache.spark" %% "spark-sql" % spark_version,
     "org.apache.spark" %% "spark-hive" % spark_version,
-    "org.apache.spark" %%"spark-streaming" % spark_version,
+    "org.apache.spark" %% "spark-streaming" % spark_version,
     "org.apache.spark" %% "spark-mllib" % spark_version,
     "org.apache.spark" %% "spark-streaming-flume" % spark_version,
     "org.apache.spark" %% "spark-graphx" % spark_version,
@@ -40,6 +40,7 @@ libraryDependencies ++= {
     "commons-codec" % "commons-codec" % "1.11",
     "org.mongodb.spark" %% "mongo-spark-connector" % "2.1.1",
     "redis.clients" % "jedis" % "2.8.0",
-    "RedisLabs" % "spark-redis" % "0.3.2"
+    "RedisLabs" % "spark-redis" % "0.3.2",
+    "org.postgresql" % "postgresql" % "42.2.5"
   )
 }
